@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprout — Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    background: #cdd6ce;
+    background-image: radial-gradient(circle at 30% 20%, #d8e2da, #c2cdc4 80%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== THEME TOKENS ===== */
+  .app {
+    --primary: oklch(0.62 0.14 150);
+    --primary-press: oklch(0.55 0.14 150);
+    --on-primary: #ffffff;
+    --primary-soft: oklch(0.93 0.05 150);
+    --primary-soft-2: oklch(0.88 0.07 150);
+
+    --bg: oklch(0.975 0.01 150);
+    --surface: #ffffff;
+    --surface-2: oklch(0.96 0.012 150);
+    --surface-3: oklch(0.93 0.015 150);
+    --text: oklch(0.26 0.03 155);
+    --text-dim: oklch(0.52 0.02 155);
+    --text-faint: oklch(0.68 0.015 155);
+    --border: oklch(0.91 0.015 155);
+    --border-strong: oklch(0.85 0.02 155);
+
+    --shadow-card: 0 1px 2px rgba(20,40,28,0.04), 0 6px 20px rgba(20,40,28,0.06);
+    --shadow-pop: 0 8px 30px rgba(20,40,28,0.16);
+
+    --amber: oklch(0.78 0.13 75);
+    --coral: oklch(0.68 0.16 30);
+    --sky: oklch(0.7 0.12 240);
+    --violet: oklch(0.62 0.15 300);
+    --pink: oklch(0.72 0.14 350);
+
+    --radius-card: 26px;
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
+
+    color: var(--text);
+    background: var(--bg);
+    transition: background .3s ease;
+  }
+
+  .app[data-theme="dark"] {
+    --primary: oklch(0.76 0.15 152);
+    --primary-press: oklch(0.7 0.15 152);
+    --on-primary: oklch(0.2 0.04 155);
+    --primary-soft: oklch(0.32 0.06 152);
+    --primary-soft-2: oklch(0.38 0.08 152);
+
+    --bg: oklch(0.19 0.012 155);
+    --surface: oklch(0.23 0.014 155);
+    --surface-2: oklch(0.27 0.016 155);
+    --surface-3: oklch(0.31 0.018 155);
+    --text: oklch(0.95 0.01 155);
+    --text-dim: oklch(0.75 0.015 155);
+    --text-faint: oklch(0.6 0.015 155);
+    --border: oklch(0.31 0.015 155);
+    --border-strong: oklch(0.38 0.02 155);
+
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    --shadow-pop: 0 10px 36px rgba(0,0,0,0.5);
+  }
+
+  .app ::-webkit-scrollbar { width: 0; height: 0; }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(10px);} to {opacity:1; transform:none;} }
+  @keyframes popIn { from { opacity:0; transform: scale(0.92);} to {opacity:1; transform:none;} }
+  @keyframes slideIn { from { transform: translateX(100%);} to { transform: translateX(0);} }
+  @keyframes sheetUp { from { transform: translateY(100%);} to { transform: translateY(0);} }
+  @keyframes ring { from { stroke-dashoffset: var(--circ);} }
+  @keyframes pulseBadge { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-home.jsx"></script>
+<script type="text/babel" src="screens-create.jsx"></script>
+<script type="text/babel" src="screens-detail.jsx"></script>
+<script type="text/babel" src="screens-stats.jsx"></script>
+<script type="text/babel" src="screens-extra.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
