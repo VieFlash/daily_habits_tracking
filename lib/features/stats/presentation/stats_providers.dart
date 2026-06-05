@@ -1,13 +1,12 @@
+import 'package:daily_habits_tracking/features/habits/presentation/providers/habit_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/stats_repository_impl.dart';
 import '../domain/entities/stats_overview.dart';
-import '../domain/repositories/stats_repository.dart';
+import '../domain/stats_calculator.dart';
 
-final statsRepositoryProvider = Provider<StatsRepository>(
-  (ref) => const StatsRepositoryImpl(),
-);
-
-final statsOverviewProvider = Provider<StatsOverview>(
-  (ref) => ref.watch(statsRepositoryProvider).getOverview(),
-);
+/// Progress-screen charts derived from real habit activity.
+final statsOverviewProvider = Provider<StatsOverview>((ref) {
+  final habits = ref.watch(habitsProvider);
+  final completions = ref.watch(habitCompletionsProvider);
+  return computeStatsOverview(habits, completions, DateTime.now());
+});

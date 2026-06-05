@@ -7,11 +7,14 @@ import 'package:daily_habits_tracking/core/presentation/widgets/habit_tile.dart'
 import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
 import 'package:daily_habits_tracking/core/theme/app_colors.dart';
 import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
-import 'package:daily_habits_tracking/core/util/seeded_random.dart';
+import 'package:daily_habits_tracking/features/habits/domain/habit_activity.dart';
 import 'package:daily_habits_tracking/features/habits/presentation/providers/habit_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+/// Number of weeks shown in the contribution heatmap.
+const _kHeatmapWeeks = 18;
 
 class HabitDetailScreen extends ConsumerStatefulWidget {
   const HabitDetailScreen({super.key, required this.id});
@@ -46,6 +49,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       );
     }
     final hc = HabitPalette.of(h.color, dark);
+    final completions = ref.watch(habitCompletionsProvider)[h.id];
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -151,7 +155,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Heatmap 18 tuần qua',
+                            'Heatmap $_kHeatmapWeeks tuần qua',
                             style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w800,
@@ -159,12 +163,24 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          _Heatmap(colorKey: h.color, dark: dark),
+                          _Heatmap(
+                            colorKey: h.color,
+                            dark: dark,
+                            target: h.target,
+                            completions: completions,
+                          ),
                         ],
                       ),
                     )
                   else
-                    AppCard(child: _MiniCalendar(colorKey: h.color, dark: dark)),
+                    AppCard(
+                      child: _MiniCalendar(
+                        colorKey: h.color,
+                        dark: dark,
+                        target: h.target,
+                        completions: completions,
+                      ),
+                    ),
                   const SectionLabel('Tuần này'),
                   AppCard(
                     padding: const EdgeInsets.symmetric(
@@ -302,17 +318,34 @@ class _StatPill extends StatelessWidget {
   }
 }
 
+/// Maps the logged count for [date] to a heatmap intensity level (0–4).
+int _intensity(int target, Map<String, int>? completions, DateTime date) {
+  final count = completions?[habitDateKey(date)] ?? 0;
+  if (count <= 0) return 0;
+  final frac = target <= 1 ? 1.0 : (count / target).clamp(0.0, 1.0);
+  if (frac >= 1) return 4;
+  if (frac >= 0.75) return 3;
+  if (frac >= 0.5) return 2;
+  return 1;
+}
+
 class _Heatmap extends StatelessWidget {
-  const _Heatmap({required this.colorKey, required this.dark});
+  const _Heatmap({
+    required this.colorKey,
+    required this.dark,
+    required this.target,
+    required this.completions,
+  });
 
   final String colorKey;
   final bool dark;
+  final int target;
+  final Map<String, int>? completions;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final hc = HabitPalette.of(colorKey, dark);
-    final data = buildHeatmap();
     final levels = [
       c.surface3,
       Color.lerp(c.surface, hc.base, 0.30)!,
@@ -320,6 +353,11 @@ class _Heatmap extends StatelessWidget {
       Color.lerp(c.surface, hc.base, 0.80)!,
       hc.base,
     ];
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final thisMonday =
+        todayDate.subtract(Duration(days: todayDate.weekday - 1));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -327,19 +365,30 @@ class _Heatmap extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              for (var w = 0; w < kHeatmapWeeks; w++) ...[
+              for (var w = 0; w < _kHeatmapWeeks; w++) ...[
                 if (w > 0) const SizedBox(width: 4),
                 Column(
                   children: [
                     for (var d = 0; d < 7; d++) ...[
                       if (d > 0) const SizedBox(height: 4),
-                      Container(
-                        width: 13,
-                        height: 13,
-                        decoration: BoxDecoration(
-                          color: levels[data[w * 7 + d]],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                      Builder(
+                        builder: (_) {
+                          final date = thisMonday
+                              .subtract(Duration(
+                                  days: (_kHeatmapWeeks - 1 - w) * 7))
+                              .add(Duration(days: d));
+                          final level = date.isAfter(todayDate)
+                              ? 0
+                              : _intensity(target, completions, date);
+                          return Container(
+                            width: 13,
+                            height: 13,
+                            decoration: BoxDecoration(
+                              color: levels[level],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ],
@@ -388,10 +437,17 @@ class _Heatmap extends StatelessWidget {
 }
 
 class _MiniCalendar extends StatelessWidget {
-  const _MiniCalendar({required this.colorKey, required this.dark});
+  const _MiniCalendar({
+    required this.colorKey,
+    required this.dark,
+    required this.target,
+    required this.completions,
+  });
 
   final String colorKey;
   final bool dark;
+  final int target;
+  final Map<String, int>? completions;
 
   @override
   Widget build(BuildContext context) {
@@ -464,9 +520,11 @@ class _MiniCalendar extends StatelessWidget {
   }
 
   Widget _calendarCell(AppColors c, HabitColor hc, int d, DateTime today) {
+    final date = DateTime(today.year, today.month, d);
     final isToday = d == today.day;
-    final done = d <= today.day && seeded(d * 1.7 + 3) > 0.32;
-    final miss = d <= today.day && !done && !isToday;
+    final done =
+        !date.isAfter(today) && isHabitDoneOn(target, completions, date);
+    final miss = d < today.day && !done;
     return Container(
       decoration: BoxDecoration(
         color: done ? hc.soft : Colors.transparent,

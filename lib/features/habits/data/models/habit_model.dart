@@ -1,6 +1,9 @@
 import '../../domain/entities/habit.dart';
 
-/// Data-layer representation of [Habit] with JSON (de)serialization.
+/// Data-layer representation of a habit *definition* with JSON
+/// (de)serialization. Only the definition is persisted; the derived stats
+/// (progress/streak/best/done/weekDone/rate) are recomputed from the completion
+/// history on read.
 class HabitModel extends Habit {
   const HabitModel({
     required super.id,
@@ -13,13 +16,8 @@ class HabitModel extends Habit {
     required super.time,
     required super.unit,
     required super.target,
-    required super.progress,
-    required super.streak,
-    required super.best,
-    required super.done,
     required super.reminder,
-    required super.weekDone,
-    required super.rate,
+    required super.createdAt,
   });
 
   factory HabitModel.fromEntity(Habit h) => HabitModel(
@@ -33,13 +31,8 @@ class HabitModel extends Habit {
     time: h.time,
     unit: h.unit,
     target: h.target,
-    progress: h.progress,
-    streak: h.streak,
-    best: h.best,
-    done: h.done,
     reminder: h.reminder,
-    weekDone: h.weekDone,
-    rate: h.rate,
+    createdAt: h.createdAt,
   );
 
   factory HabitModel.fromJson(Map<String, dynamic> json) => HabitModel(
@@ -53,15 +46,9 @@ class HabitModel extends Habit {
     time: json['time'] as String? ?? '—',
     unit: json['unit'] as String? ?? '',
     target: (json['target'] as num?)?.toInt() ?? 1,
-    progress: (json['progress'] as num?)?.toInt() ?? 0,
-    streak: (json['streak'] as num?)?.toInt() ?? 0,
-    best: (json['best'] as num?)?.toInt() ?? 0,
-    done: json['done'] as bool? ?? false,
     reminder: json['reminder'] as bool? ?? false,
-    weekDone:
-        (json['weekDone'] as List?)?.map((e) => (e as num).toInt()).toList() ??
-        const [0, 0, 0, 0, 0, 0, 0],
-    rate: (json['rate'] as num?)?.toInt() ?? 0,
+    createdAt:
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -75,12 +62,7 @@ class HabitModel extends Habit {
     'time': time,
     'unit': unit,
     'target': target,
-    'progress': progress,
-    'streak': streak,
-    'best': best,
-    'done': done,
     'reminder': reminder,
-    'weekDone': weekDone,
-    'rate': rate,
+    'createdAt': createdAt.toIso8601String(),
   };
 }

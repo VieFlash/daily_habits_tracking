@@ -1,7 +1,8 @@
-import '../entities/badge.dart';
-import '../entities/user_profile.dart';
-
+/// Persistence for the user's editable profile fields and install timestamp.
+/// Gamification numbers (XP, level, badges) are computed, not stored.
 abstract interface class ProfileRepository {
-  UserProfile getProfile();
-  List<Badge> getBadges();
+  String getName();
+  String getHandle();
+  DateTime getInstalledAt();
+  Future<void> saveName(String name);
 }

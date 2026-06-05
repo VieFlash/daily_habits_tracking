@@ -10,7 +10,10 @@ import 'package:daily_habits_tracking/core/presentation/widgets/progress_ring.da
 import 'package:daily_habits_tracking/core/theme/app_colors.dart';
 import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
 import 'package:daily_habits_tracking/features/habits/domain/entities/habit.dart';
+import 'package:daily_habits_tracking/features/habits/domain/habit_activity.dart';
+import 'package:daily_habits_tracking/features/habits/domain/habit_templates.dart';
 import 'package:daily_habits_tracking/features/habits/presentation/providers/habit_providers.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/widgets/habit_suggestions.dart';
 import 'package:daily_habits_tracking/features/profile/presentation/providers/profile_providers.dart';
 import 'package:daily_habits_tracking/features/settings/presentation/providers/settings_providers.dart';
 import 'package:flutter/material.dart';
@@ -26,13 +29,20 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
+DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _filter = 'all';
+  DateTime _selectedDay = _dateOnly(DateTime.now());
+
+  bool get _isToday => _selectedDay == _dateOnly(DateTime.now());
 
   Future<void> _toggle(Habit h) async {
-    final becameDone = await ref.read(habitsProvider.notifier).toggle(h.id);
+    final becameDone =
+        await ref.read(habitsProvider.notifier).toggleOn(h.id, _selectedDay);
     if (becameDone && mounted) {
-      showFlash(context, '+10 XP · ${h.name} ✓', icon: 'sparkle');
+      final suffix = _isToday ? '' : ' (bù ngày)';
+      showFlash(context, '+10 XP · ${h.name} ✓$suffix', icon: 'sparkle');
     }
   }
 
@@ -46,22 +56,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showFlash(context, 'Bố cục: $label', icon: 'grid');
   }
 
+  void _addFromTemplate(HabitTemplate t) {
+    ref.read(habitsProvider.notifier).add(t.toHabit());
+    showFlash(context, 'Đã thêm ${t.name} 🌱', icon: 'check');
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final habits = ref.watch(habitsProvider);
+    final completions = ref.watch(habitCompletionsProvider);
     final layout = ref.watch(settingsProvider.select((s) => s.layout));
+    final suggestionsHidden =
+        ref.watch(settingsProvider.select((s) => s.suggestionsHidden));
     final user = ref.watch(userProfileProvider);
     final dark = c.isDark;
 
-    final cats = {for (final h in habits) h.cat}.toList();
-    List<Habit> list = habits;
+    // Habits as of the selected day: only those that existed by then, with their
+    // stats derived for that date (so the list/summary reflect that day).
+    final habitsForDay = [
+      for (final h in habits)
+        if (!_dateOnly(h.createdAt).isAfter(_selectedDay))
+          deriveHabit(h, completions[h.id], _selectedDay),
+    ];
+
+    // Trending presets the user hasn't added yet (matched by name).
+    final addedNames = {for (final h in habits) h.name.trim().toLowerCase()};
+    final remainingTemplates = [
+      for (final t in kHabitTemplates)
+        if (!addedNames.contains(t.name.toLowerCase())) t,
+    ];
+    final showInlineSuggestions = habits.isNotEmpty &&
+        !suggestionsHidden &&
+        remainingTemplates.isNotEmpty;
+
+    final cats = {for (final h in habitsForDay) h.cat}.toList();
+    List<Habit> list = habitsForDay;
     if (_filter == 'todo') {
-      list = habits.where((h) => !h.done).toList();
+      list = habitsForDay.where((h) => !h.done).toList();
     } else if (_filter == 'done') {
-      list = habits.where((h) => h.done).toList();
+      list = habitsForDay.where((h) => h.done).toList();
     } else if (_filter != 'all') {
-      list = habits.where((h) => h.cat == _filter).toList();
+      list = habitsForDay.where((h) => h.cat == _filter).toList();
     }
 
     return SafeArea(
@@ -77,47 +113,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onBell: () => showNotificationsSheet(context),
             onProfile: () => context.push('/profile'),
           ),
-          const _WeekStrip(),
+          _WeekStrip(
+            habits: habits,
+            completions: completions,
+            selectedDay: _selectedDay,
+            onSelect: (d) => setState(() => _selectedDay = d),
+          ),
+          if (!_isToday)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _ViewingDayBanner(
+                day: _selectedDay,
+                onToday: () =>
+                    setState(() => _selectedDay = _dateOnly(DateTime.now())),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _SummaryCard(habits: habits),
+            child: _SummaryCard(habits: habitsForDay),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: Row(
-              children: [
-                AppChip(
-                  label: 'Tất cả',
-                  active: _filter == 'all',
-                  onTap: () => setState(() => _filter = 'all'),
-                ),
-                const SizedBox(width: 8),
-                AppChip(
-                  label: 'Chưa xong',
-                  active: _filter == 'todo',
-                  onTap: () => setState(() => _filter = 'todo'),
-                ),
-                const SizedBox(width: 8),
-                AppChip(
-                  label: 'Đã xong',
-                  active: _filter == 'done',
-                  onTap: () => setState(() => _filter = 'done'),
-                ),
-                for (final cat in cats) ...[
+          if (habits.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              child: Row(
+                children: [
+                  AppChip(
+                    label: 'Tất cả',
+                    active: _filter == 'all',
+                    onTap: () => setState(() => _filter = 'all'),
+                  ),
                   const SizedBox(width: 8),
                   AppChip(
-                    label: cat,
-                    active: _filter == cat,
-                    onTap: () => setState(() => _filter = cat),
+                    label: 'Chưa xong',
+                    active: _filter == 'todo',
+                    onTap: () => setState(() => _filter = 'todo'),
                   ),
+                  const SizedBox(width: 8),
+                  AppChip(
+                    label: 'Đã xong',
+                    active: _filter == 'done',
+                    onTap: () => setState(() => _filter = 'done'),
+                  ),
+                  for (final cat in cats) ...[
+                    const SizedBox(width: 8),
+                    AppChip(
+                      label: cat,
+                      active: _filter == cat,
+                      onTap: () => setState(() => _filter = cat),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 110),
-            child: list.isEmpty
+            padding: EdgeInsets.fromLTRB(16, 6, 16, showInlineSuggestions ? 8 : 110),
+            child: habits.isEmpty
+                ? _StarterSuggestions(
+                    onPick: _addFromTemplate,
+                    templates: remainingTemplates,
+                  )
+                : list.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Column(
@@ -176,8 +232,125 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
           ),
+          if (showInlineSuggestions)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
+              child: _InlineSuggestions(
+                templates: remainingTemplates,
+                onPick: _addFromTemplate,
+                onHide: () =>
+                    ref.read(settingsProvider.notifier).hideSuggestions(),
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// Empty-state shown when the user has no habits yet: a friendly intro plus a
+/// gallery of trending presets they can add with one tap.
+class _StarterSuggestions extends StatelessWidget {
+  const _StarterSuggestions({required this.onPick, required this.templates});
+
+  final void Function(HabitTemplate template) onPick;
+  final List<HabitTemplate> templates;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: c.primarySoft,
+              borderRadius: BorderRadius.circular(22),
+            ),
+            alignment: Alignment.center,
+            child: Icon(AppIcons.resolve('leaf'), size: 32, color: c.primary),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Bắt đầu từ một thói quen nhỏ',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: c.text,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Chọn bao nhiêu gợi ý tùy thích bên dưới, hoặc bấm nút + để tự tạo.',
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+              color: c.textDim,
+            ),
+          ),
+          const SizedBox(height: 16),
+          HabitSuggestions(onPick: onPick, templates: templates),
+        ],
+      ),
+    );
+  }
+}
+
+/// Persistent "more suggestions" section shown once the user has at least one
+/// habit, so they can keep adding presets. Dismissible (remembered).
+class _InlineSuggestions extends StatelessWidget {
+  const _InlineSuggestions({
+    required this.templates,
+    required this.onPick,
+    required this.onHide,
+  });
+
+  final List<HabitTemplate> templates;
+  final void Function(HabitTemplate template) onPick;
+  final VoidCallback onHide;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Gợi ý cho bạn',
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w900,
+                  color: c.text,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: onHide,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Text(
+                  'Ẩn',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: c.textDim,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        HabitSuggestions(onPick: onPick, templates: templates),
+      ],
     );
   }
 }
@@ -275,81 +448,238 @@ class _Greeting extends StatelessWidget {
   }
 }
 
+/// The Mon→Sun week containing [selectedDay]. Tapping a day selects it (to view
+/// / back-fill that day); ‹ › step between weeks. The dot under each date shows
+/// how much of that day's habits were completed. Future days are disabled.
 class _WeekStrip extends StatelessWidget {
-  const _WeekStrip();
+  const _WeekStrip({
+    required this.habits,
+    required this.completions,
+    required this.selectedDay,
+    required this.onSelect,
+  });
+
+  final List<Habit> habits;
+  final Map<String, Map<String, int>> completions;
+  final DateTime selectedDay;
+  final void Function(DateTime day) onSelect;
+
+  static const _months = [
+    'thg 1', 'thg 2', 'thg 3', 'thg 4', 'thg 5', 'thg 6',
+    'thg 7', 'thg 8', 'thg 9', 'thg 10', 'thg 11', 'thg 12',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final today = DateTime.now();
-    final days = <_WeekDay>[];
-    for (var i = -3; i <= 3; i++) {
-      final d = today.add(Duration(days: i));
-      days.add(_WeekDay(kWeekLabels[(d.weekday - 1) % 7], d.day, i == 0));
-    }
+    final today = _dateOnly(DateTime.now());
+    final monday = selectedDay.subtract(Duration(days: selectedDay.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    final todayMonday = today.subtract(Duration(days: today.weekday - 1));
+    final canGoNext = monday.isBefore(todayMonday);
+
+    final label = monday.month == sunday.month
+        ? '${monday.day} – ${sunday.day} ${_months[sunday.month - 1]}'
+        : '${monday.day} ${_months[monday.month - 1]} – '
+              '${sunday.day} ${_months[sunday.month - 1]}';
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
         children: [
-          for (var i = 0; i < days.length; i++) ...[
-            if (i > 0) const SizedBox(width: 6),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9),
-                decoration: BoxDecoration(
-                  color: days[i].today ? c.primary : c.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: days[i].today ? null : Border.all(color: c.border),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      days[i].dow,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: days[i].today
-                            ? c.onPrimary.withValues(alpha: 0.9)
-                            : c.text.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${days[i].num}',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: days[i].today ? c.onPrimary : c.text,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (!days[i].today)
-                      Container(
-                        width: 4,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: c.primary.withValues(alpha: 0.5),
-                        ),
-                      )
-                    else
-                      const SizedBox(height: 4),
-                  ],
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: c.textDim,
+                  ),
                 ),
               ),
-            ),
-          ],
+              SoftIconButton(
+                icon: 'chevL',
+                size: 30,
+                onTap: () => onSelect(
+                  _dateOnly(selectedDay.subtract(const Duration(days: 7))),
+                ),
+              ),
+              const SizedBox(width: 6),
+              SoftIconButton(
+                icon: 'chevR',
+                size: 30,
+                onTap: canGoNext
+                    ? () {
+                        final next =
+                            _dateOnly(selectedDay.add(const Duration(days: 7)));
+                        onSelect(next.isAfter(today) ? today : next);
+                      }
+                    : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = 0; i < 7; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: _DayCell(
+                    date: monday.add(Duration(days: i)),
+                    selected: monday.add(Duration(days: i)) == selectedDay,
+                    isToday: monday.add(Duration(days: i)) == today,
+                    disabled: monday.add(Duration(days: i)).isAfter(today),
+                    percent: dayCompletionPercent(
+                      habits,
+                      completions,
+                      monday.add(Duration(days: i)),
+                      today,
+                    ),
+                    onSelect: onSelect,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _WeekDay {
-  const _WeekDay(this.dow, this.num, this.today);
-  final String dow;
-  final int num;
-  final bool today;
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.date,
+    required this.selected,
+    required this.isToday,
+    required this.disabled,
+    required this.percent,
+    required this.onSelect,
+  });
+
+  final DateTime date;
+  final bool selected;
+  final bool isToday;
+  final bool disabled;
+  final int percent;
+  final void Function(DateTime day) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final dow = kWeekLabels[(date.weekday - 1) % 7];
+    return Opacity(
+      opacity: disabled ? 0.4 : 1,
+      child: GestureDetector(
+        onTap: disabled ? null : () => onSelect(date),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? c.primary : c.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: selected
+                ? null
+                : Border.all(
+                    color: isToday ? c.primary : c.border,
+                    width: isToday ? 1.5 : 1,
+                  ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                dow,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? c.onPrimary.withValues(alpha: 0.9)
+                      : c.textDim,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${date.day}',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? c.onPrimary : c.text,
+                ),
+              ),
+              const SizedBox(height: 5),
+              _dot(c),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dot(AppColors c) {
+    final base = selected ? c.onPrimary : c.primary;
+    final Color color;
+    if (percent >= 100) {
+      color = base;
+    } else if (percent > 0) {
+      color = base.withValues(alpha: 0.45);
+    } else {
+      color = (selected ? c.onPrimary : c.textFaint).withValues(alpha: 0.3);
+    }
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}
+
+/// Notice shown when viewing a day other than today, with a shortcut back.
+class _ViewingDayBanner extends StatelessWidget {
+  const _ViewingDayBanner({required this.day, required this.onToday});
+
+  final DateTime day;
+  final VoidCallback onToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final dow = kWeekLabels[(day.weekday - 1) % 7];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.primarySoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.resolve('calendar'), size: 16, color: c.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Đang xem $dow ${day.day}/${day.month}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: c.text,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onToday,
+            child: Text(
+              'Về hôm nay',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: c.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -363,6 +693,10 @@ class _SummaryCard extends StatelessWidget {
     final done = habits.where((h) => h.done).length;
     final total = habits.length;
     final pct = total == 0 ? 0.0 : done / total;
+    final longestStreak = habits.fold<int>(
+      0,
+      (m, h) => h.streak > m ? h.streak : m,
+    );
     final msg = pct == 1
         ? 'Hoàn hảo! Bạn đã xong tất cả 🎉'
         : pct >= 0.5
@@ -443,9 +777,9 @@ class _SummaryCard extends StatelessWidget {
                   color: Colors.white,
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  '31',
-                  style: TextStyle(
+                Text(
+                  '$longestStreak',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

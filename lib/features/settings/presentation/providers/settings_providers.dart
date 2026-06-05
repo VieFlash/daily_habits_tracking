@@ -34,6 +34,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   void setLayout(String l) => _update(state.copyWith(layout: l));
   void completeOnboarding() => _update(state.copyWith(onboarded: true));
 
+  void hideSuggestions() => _update(state.copyWith(suggestionsHidden: true));
+  void setSuggestionsHidden(bool v) =>
+      _update(state.copyWith(suggestionsHidden: v));
+
   /// Cycles card -> list -> grid (cycleLayout in app.jsx); returns the new value.
   String cycleLayout() {
     const order = ['card', 'list', 'grid'];

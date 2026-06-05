@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
 
-/// A trackable habit. Pure domain entity — holds the data plus the business
-/// rules for checking a habit in/out for the day.
+/// A trackable habit.
+///
+/// The *definition* fields (name, icon, target, …) are what the user enters and
+/// what gets persisted. The *derived* fields (progress, streak, best, done,
+/// weekDone, rate) are NOT stored — they are computed for "today" from the
+/// completion history by the data layer (see `habit_activity.dart`). On a fresh
+/// definition they default to zero/empty.
 @immutable
 class Habit {
   const Habit({
@@ -15,15 +20,17 @@ class Habit {
     required this.time,
     required this.unit,
     required this.target,
-    required this.progress,
-    required this.streak,
-    required this.best,
-    required this.done,
     required this.reminder,
-    required this.weekDone,
-    required this.rate,
+    required this.createdAt,
+    this.progress = 0,
+    this.streak = 0,
+    this.best = 0,
+    this.done = false,
+    this.weekDone = const [0, 0, 0, 0, 0, 0, 0],
+    this.rate = 0,
   });
 
+  // ---- Definition (persisted) ----
   final String id;
   final String name;
   final String icon;
@@ -34,30 +41,20 @@ class Habit {
   final String time;
   final String unit;
   final int target;
+  final bool reminder;
+  final DateTime createdAt;
+
+  // ---- Derived for today (computed, not persisted) ----
   final int progress;
   final int streak;
   final int best;
   final bool done;
-  final bool reminder;
-  final List<int> weekDone; // 7 entries, 1 = done
+  final List<int> weekDone; // 7 entries (Mon..Sun), 1 = done
   final int rate;
 
   /// Daily progress fraction used by progress bars / rings.
   double get progressFraction =>
       target > 1 ? progress / target : (done ? 1 : 0);
-
-  /// Toggles today's completion, recomputing progress + streak.
-  /// Mirrors `toggle()` in app.jsx.
-  Habit toggled() {
-    final nextDone = !done;
-    return copyWith(
-      done: nextDone,
-      progress: nextDone
-          ? target
-          : (progress == target ? (target - 1).clamp(0, target) : progress),
-      streak: nextDone ? streak + 1 : (streak - 1).clamp(0, 1 << 30),
-    );
-  }
 
   Habit copyWith({
     String? name,
@@ -69,11 +66,12 @@ class Habit {
     String? time,
     String? unit,
     int? target,
+    bool? reminder,
+    DateTime? createdAt,
     int? progress,
     int? streak,
     int? best,
     bool? done,
-    bool? reminder,
     List<int>? weekDone,
     int? rate,
   }) {
@@ -88,11 +86,12 @@ class Habit {
       time: time ?? this.time,
       unit: unit ?? this.unit,
       target: target ?? this.target,
+      reminder: reminder ?? this.reminder,
+      createdAt: createdAt ?? this.createdAt,
       progress: progress ?? this.progress,
       streak: streak ?? this.streak,
       best: best ?? this.best,
       done: done ?? this.done,
-      reminder: reminder ?? this.reminder,
       weekDone: weekDone ?? this.weekDone,
       rate: rate ?? this.rate,
     );

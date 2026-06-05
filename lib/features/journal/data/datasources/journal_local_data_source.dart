@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:daily_habits_tracking/core/storage/key_value_store.dart';
 
 import '../models/journal_entry_model.dart';
-import 'journal_seed.dart';
 
+/// Persists journal entries in the [KeyValueStore]. Starts empty — no seed data.
 class JournalLocalDataSource {
   JournalLocalDataSource(this._store);
 
@@ -13,7 +13,7 @@ class JournalLocalDataSource {
 
   List<JournalEntryModel> read() {
     final raw = _store.getString(_key);
-    if (raw == null) return List.of(kJournalSeed);
+    if (raw == null) return const [];
     final list = jsonDecode(raw) as List;
     return list
         .map((e) => JournalEntryModel.fromJson(e as Map<String, dynamic>))

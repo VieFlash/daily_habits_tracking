@@ -13,6 +13,7 @@ class SettingsLocalDataSource {
   static const _kCorner = 'pref_corner';
   static const _kLayout = 'pref_layout';
   static const _kOnboarded = 'onboarded';
+  static const _kSuggestionsHidden = 'pref_suggestions_hidden';
 
   AppSettings read() => AppSettings(
     dark: _store.getBool(_kDark) ?? AppSettings.initial.dark,
@@ -20,6 +21,8 @@ class SettingsLocalDataSource {
     corner: _store.getString(_kCorner) ?? AppSettings.initial.corner,
     layout: _store.getString(_kLayout) ?? AppSettings.initial.layout,
     onboarded: _store.getBool(_kOnboarded) ?? AppSettings.initial.onboarded,
+    suggestionsHidden: _store.getBool(_kSuggestionsHidden) ??
+        AppSettings.initial.suggestionsHidden,
   );
 
   Future<void> write(AppSettings s) async {
@@ -28,5 +31,6 @@ class SettingsLocalDataSource {
     await _store.setString(_kCorner, s.corner);
     await _store.setString(_kLayout, s.layout);
     await _store.setBool(_kOnboarded, s.onboarded);
+    await _store.setBool(_kSuggestionsHidden, s.suggestionsHidden);
   }
 }

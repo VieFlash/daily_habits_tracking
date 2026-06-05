@@ -1,7 +1,7 @@
 import '../entities/habit.dart';
 import '../repositories/habit_repository.dart';
 
-/// Replaces an existing habit (matched by id) and persists the list.
+/// Replaces an existing habit definition (matched by id) and persists the list.
 class UpdateHabit {
   const UpdateHabit(this._repo);
   final HabitRepository _repo;
@@ -11,7 +11,7 @@ class UpdateHabit {
       for (final h in _repo.getHabits())
         if (h.id == habit.id) habit else h,
     ];
-    await _repo.saveHabits(updated);
-    return updated;
+    await _repo.saveDefinitions(updated);
+    return _repo.getHabits();
   }
 }

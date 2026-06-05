@@ -39,8 +39,9 @@ dependencies:
   flutter_riverpod: ^2.6.1
   # Navigation
   go_router: ^14.6.2
-  # Local storage
-  shared_preferences: ^2.3.3
+  # Local storage (on-device NoSQL key/value DB)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   # Fonts (Nunito) — matches the original design
   google_fonts: ^6.2.1
 

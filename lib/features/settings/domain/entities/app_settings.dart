@@ -11,6 +11,7 @@ class AppSettings {
     required this.corner,
     required this.layout,
     required this.onboarded,
+    required this.suggestionsHidden,
   });
 
   final bool dark;
@@ -19,12 +20,16 @@ class AppSettings {
   final String layout; // card | list | grid
   final bool onboarded;
 
+  /// Whether the user dismissed the "suggested habits" section on the home.
+  final bool suggestionsHidden;
+
   static const initial = AppSettings(
     dark: false,
     accentIndex: 0,
     corner: 'rounded',
     layout: 'card',
     onboarded: false,
+    suggestionsHidden: false,
   );
 
   AppSettings copyWith({
@@ -33,11 +38,13 @@ class AppSettings {
     String? corner,
     String? layout,
     bool? onboarded,
+    bool? suggestionsHidden,
   }) => AppSettings(
     dark: dark ?? this.dark,
     accentIndex: accentIndex ?? this.accentIndex,
     corner: corner ?? this.corner,
     layout: layout ?? this.layout,
     onboarded: onboarded ?? this.onboarded,
+    suggestionsHidden: suggestionsHidden ?? this.suggestionsHidden,
   );
 }

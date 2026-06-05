@@ -7,9 +7,11 @@ import 'package:daily_habits_tracking/core/presentation/widgets/habit_tile.dart'
 import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
 import 'package:daily_habits_tracking/core/theme/app_colors.dart';
 import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
-import 'package:daily_habits_tracking/features/habits/data/datasources/habit_seed.dart';
+import 'package:daily_habits_tracking/core/constants/habit_icon_choices.dart';
 import 'package:daily_habits_tracking/features/habits/domain/entities/habit.dart';
+import 'package:daily_habits_tracking/features/habits/domain/habit_templates.dart';
 import 'package:daily_habits_tracking/features/habits/presentation/providers/habit_providers.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/widgets/habit_suggestions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -85,6 +87,20 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
     });
   }
 
+  /// Pre-fills the form from a trending preset so the user can tweak then save.
+  void _applyTemplate(HabitTemplate t) {
+    setState(() {
+      _name.text = t.name;
+      _icon = t.icon;
+      _color = t.color;
+      _target = t.target;
+      _unit.text = t.unit;
+      _freq = 'daily';
+      _reminder = t.time != '—';
+      if (_reminder) _time = _parseTime(t.time);
+    });
+  }
+
   void _save() {
     final name = _name.text.trim().isEmpty
         ? 'Thói quen mới'
@@ -121,13 +137,8 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
           time: _reminder ? _timeText : '—',
           unit: _unit.text.trim(),
           target: _target,
-          progress: 0,
-          streak: 0,
-          best: 0,
-          done: false,
           reminder: _reminder,
-          weekDone: const [0, 0, 0, 0, 0, 0, 0],
-          rate: 0,
+          createdAt: DateTime.now(),
         ),
       );
       context.pop();
@@ -165,6 +176,12 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 children: [
+                  if (!editing) ...[
+                    _label(context, 'GỢI Ý NHANH'),
+                    const SizedBox(height: 10),
+                    HabitSuggestions(onPick: _applyTemplate),
+                    const SizedBox(height: 18),
+                  ],
                   // Live preview
                   AppCard(
                     color: hc.soft,

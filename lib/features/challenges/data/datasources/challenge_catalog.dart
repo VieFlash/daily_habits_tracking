@@ -1,28 +1,31 @@
 import '../../domain/entities/challenge.dart';
 
-/// Reference challenges, ported from data.jsx.
-const kChallengeSeed = <Challenge>[
+/// The community-challenge catalog. This is app-provided *content* (like the
+/// badge definitions), not user data — without a backend it cannot be "live".
+/// Every challenge starts un-joined; the user's join/progress state is persisted
+/// separately and overlaid by the repository.
+const kChallengeCatalog = <Challenge>[
   Challenge(
     id: 'c1',
     name: '21 ngày uống đủ nước',
     icon: 'water',
     color: 'sky',
-    joined: true,
+    joined: false,
     total: 21,
-    current: 14,
+    current: 0,
     people: 1284,
-    days: '7 ngày còn lại',
+    days: '21 ngày',
   ),
   Challenge(
     id: 'c2',
     name: 'Tháng không đường',
     icon: 'apple',
     color: 'green',
-    joined: true,
+    joined: false,
     total: 30,
-    current: 8,
+    current: 0,
     people: 642,
-    days: '22 ngày còn lại',
+    days: '30 ngày',
   ),
   Challenge(
     id: 'c3',
@@ -33,7 +36,7 @@ const kChallengeSeed = <Challenge>[
     total: 30,
     current: 0,
     people: 3120,
-    days: 'Bắt đầu T2',
+    days: '30 ngày',
   ),
   Challenge(
     id: 'c4',
@@ -44,7 +47,7 @@ const kChallengeSeed = <Challenge>[
     total: 7,
     current: 0,
     people: 890,
-    days: 'Mở đăng ký',
+    days: '7 ngày',
   ),
   Challenge(
     id: 'c5',
@@ -55,6 +58,6 @@ const kChallengeSeed = <Challenge>[
     total: 50,
     current: 0,
     people: 410,
-    days: 'Bắt đầu 1/7',
+    days: '30 ngày',
   ),
 ];

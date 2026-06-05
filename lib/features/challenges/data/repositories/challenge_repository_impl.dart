@@ -1,24 +1,35 @@
 import '../../domain/entities/challenge.dart';
 import '../../domain/repositories/challenge_repository.dart';
-import '../datasources/challenge_seed.dart';
+import '../datasources/challenge_catalog.dart';
+import '../datasources/challenge_local_data_source.dart';
 
-/// In-memory challenge repository. Join state lives for the app session only
-/// (challenges are reference content in the original mock, not persisted).
+/// Serves the challenge catalog with the user's persisted join state overlaid.
 class ChallengeRepositoryImpl implements ChallengeRepository {
-  List<Challenge> _state = List.of(kChallengeSeed);
+  ChallengeRepositoryImpl(this._local);
+
+  final ChallengeLocalDataSource _local;
 
   @override
-  List<Challenge> getChallenges() => List.unmodifiable(_state);
+  List<Challenge> getChallenges() {
+    final joins = _local.readJoins();
+    return [
+      for (final c in kChallengeCatalog)
+        if (joins.containsKey(c.id))
+          c.copyWith(joined: true, current: joins[c.id])
+        else
+          c,
+    ];
+  }
 
   @override
   List<Challenge> join(String id) {
-    _state = [
-      for (final ch in _state)
-        if (ch.id == id)
-          ch.copyWith(joined: true, current: ch.current == 0 ? 1 : ch.current)
-        else
-          ch,
-    ];
-    return List.unmodifiable(_state);
+    final joins = Map<String, int>.of(_local.readJoins());
+    if (!joins.containsKey(id)) {
+      joins[id] = 1; // day 1 on joining
+      // Hive updates its in-memory cache synchronously, so the read below already
+      // reflects this write even though persistence completes asynchronously.
+      _local.writeJoins(joins);
+    }
+    return getChallenges();
   }
 }

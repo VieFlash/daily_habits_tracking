@@ -57,6 +57,13 @@ class HabitsNotifier extends StateNotifier<List<Habit>> {
     return result.becameDone;
   }
 
+  /// Toggles completion for [id] on a specific [date] (back-filling a past day).
+  Future<bool> toggleOn(String id, DateTime date) async {
+    final result = await _ref.read(_toggleHabitProvider)(id, date: date);
+    state = result.habits;
+    return result.becameDone;
+  }
+
   Future<void> add(Habit habit) async {
     state = await _ref.read(_addHabitProvider)(habit);
   }
@@ -73,3 +80,10 @@ class HabitsNotifier extends StateNotifier<List<Habit>> {
 final habitsProvider = StateNotifierProvider<HabitsNotifier, List<Habit>>(
   (ref) => HabitsNotifier(ref),
 );
+
+/// Raw completion history (`habitId -> { 'yyyy-MM-dd': count }`). Re-read
+/// whenever the habit list changes, so stats/heatmaps stay in sync.
+final habitCompletionsProvider = Provider<Map<String, Map<String, int>>>((ref) {
+  ref.watch(habitsProvider);
+  return ref.watch(habitRepositoryProvider).getCompletions();
+});

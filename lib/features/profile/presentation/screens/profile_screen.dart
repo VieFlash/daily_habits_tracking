@@ -19,6 +19,8 @@ class ProfileScreen extends ConsumerWidget {
     final c = context.colors;
     final user = ref.watch(userProfileProvider);
     final dark = ref.watch(settingsProvider.select((s) => s.dark));
+    final suggestionsHidden =
+        ref.watch(settingsProvider.select((s) => s.suggestionsHidden));
     final stats = [
       (formatThousands(user.totalDone), 'Hoàn thành'),
       ('${user.longestStreak}', 'Chuỗi dài nhất'),
@@ -150,6 +152,18 @@ class ProfileScreen extends ConsumerWidget {
                             value: dark,
                             onChanged: (_) =>
                                 ref.read(settingsProvider.notifier).toggleDark(),
+                          ),
+                        ),
+                        _divider(c),
+                        _Row(
+                          icon: 'sparkle',
+                          label: 'Gợi ý thói quen',
+                          color: c.primary,
+                          trailing: AppSwitch(
+                            value: !suggestionsHidden,
+                            onChanged: (v) => ref
+                                .read(settingsProvider.notifier)
+                                .setSuggestionsHidden(!v),
                           ),
                         ),
                       ],

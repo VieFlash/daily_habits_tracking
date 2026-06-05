@@ -1,13 +1,19 @@
+import 'package:daily_habits_tracking/core/di/core_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/challenge_local_data_source.dart';
 import '../../data/repositories/challenge_repository_impl.dart';
 import '../../domain/entities/challenge.dart';
 import '../../domain/repositories/challenge_repository.dart';
 import '../../domain/usecases/get_challenges.dart';
 import '../../domain/usecases/join_challenge.dart';
 
+final challengeLocalDataSourceProvider = Provider<ChallengeLocalDataSource>(
+  (ref) => ChallengeLocalDataSource(ref.watch(keyValueStoreProvider)),
+);
+
 final challengeRepositoryProvider = Provider<ChallengeRepository>(
-  (ref) => ChallengeRepositoryImpl(),
+  (ref) => ChallengeRepositoryImpl(ref.watch(challengeLocalDataSourceProvider)),
 );
 
 final _getChallengesProvider = Provider(

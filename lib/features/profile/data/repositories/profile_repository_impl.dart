@@ -1,14 +1,20 @@
-import '../../domain/entities/badge.dart';
-import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
-import '../datasources/profile_seed.dart';
+import '../datasources/profile_local_data_source.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
-  const ProfileRepositoryImpl();
+  ProfileRepositoryImpl(this._local);
+
+  final ProfileLocalDataSource _local;
 
   @override
-  UserProfile getProfile() => kUserSeed;
+  String getName() => _local.getName();
 
   @override
-  List<Badge> getBadges() => kBadgeSeed;
+  String getHandle() => _local.getHandle();
+
+  @override
+  DateTime getInstalledAt() => _local.getInstalledAt();
+
+  @override
+  Future<void> saveName(String name) => _local.setName(name);
 }
