@@ -1,8 +1,7 @@
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
 
 /// Scaffold hosting the four primary tabs and the central add FAB.
 /// Floating pill nav bar with a docked center FAB (BottomNav in components.jsx,

@@ -1,19 +1,21 @@
 import 'dart:math' as math;
 
+import 'package:daily_habits_tracking/core/constants/week.dart';
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/app_card.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/habit_tile.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/progress_ring.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
+import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
+import 'package:daily_habits_tracking/core/util/number_format.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/providers/habit_providers.dart';
+import 'package:daily_habits_tracking/features/profile/domain/entities/user_profile.dart';
+import 'package:daily_habits_tracking/features/profile/presentation/providers/profile_providers.dart';
+import 'package:daily_habits_tracking/features/stats/presentation/stats_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/habit_palette.dart';
-import '../data/models/user_profile.dart';
-import '../data/seed_data.dart';
-import '../providers/habits_provider.dart';
-import '../widgets/app_card.dart';
-import '../widgets/habit_tile.dart';
-import '../widgets/misc.dart';
-import '../widgets/progress_ring.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -23,7 +25,8 @@ class StatsScreen extends ConsumerWidget {
     final c = context.colors;
     final dark = c.isDark;
     final habits = ref.watch(habitsProvider);
-    final user = SeedData.user;
+    final user = ref.watch(userProfileProvider);
+    final overview = ref.watch(statsOverviewProvider);
     final totalRate = habits.isEmpty
         ? 0
         : (habits.fold<int>(0, (a, h) => a + h.rate) / habits.length).round();
@@ -89,7 +92,7 @@ class StatsScreen extends ConsumerWidget {
                           _MiniStat(
                             icon: 'check',
                             color: c.primary,
-                            value: _format(user.totalDone),
+                            value: formatThousands(user.totalDone),
                             label: 'lần hoàn thành',
                           ),
                           const SizedBox(height: 12),
@@ -132,8 +135,8 @@ class StatsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 14),
                       _BarChart(
-                        data: SeedData.weeklyCompletion,
-                        labels: SeedData.weekLabels,
+                        data: overview.weeklyCompletion,
+                        labels: kWeekLabels,
                         color: c.primary,
                       ),
                     ],
@@ -178,7 +181,7 @@ class StatsScreen extends ConsumerWidget {
                       SizedBox(
                         height: 96,
                         child: _LineChart(
-                          data: SeedData.monthTrend,
+                          data: overview.monthTrend,
                           color: c.primary,
                         ),
                       ),
@@ -276,16 +279,6 @@ class StatsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  static String _format(int n) {
-    final s = n.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return buf.toString();
   }
 }
 

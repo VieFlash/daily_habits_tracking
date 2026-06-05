@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
-import 'providers/settings_provider.dart';
-import 'router/app_router.dart';
+import 'features/settings/presentation/providers/settings_providers.dart';
+import 'routing/app_router.dart';
 
 /// Root widget. Rebuilds the theme whenever appearance settings change.
 class SproutApp extends ConsumerWidget {
@@ -18,7 +18,7 @@ class SproutApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(
         dark: settings.dark,
-        accent: settings.accent,
+        accent: accentColorOf(settings),
         cornerKey: settings.corner,
       ),
       routerConfig: router,

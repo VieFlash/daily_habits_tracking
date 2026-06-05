@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
-import 'data/local_store.dart';
-import 'providers/app_providers.dart';
+import 'core/di/core_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize local storage (seeds mock data on first launch). This replaces
-  // what would otherwise be a backend API.
-  final store = await LocalStore.create();
+  // Initialize local storage. Each feature's data source seeds its own mock
+  // data on first launch (this replaces what would otherwise be a backend API).
+  final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
-      overrides: [localStoreProvider.overrideWithValue(store)],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const SproutApp(),
     ),
   );

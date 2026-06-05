@@ -5,17 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:daily_habits_tracking/app.dart';
-import 'package:daily_habits_tracking/data/local_store.dart';
-import 'package:daily_habits_tracking/providers/app_providers.dart';
+import 'package:daily_habits_tracking/core/di/core_providers.dart';
 
 void main() {
   testWidgets('App boots into onboarding on first launch', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final store = await LocalStore.create();
+    final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [localStoreProvider.overrideWithValue(store)],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: const SproutApp(),
       ),
     );

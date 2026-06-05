@@ -1,36 +1,26 @@
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/app_card.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/buttons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
+import 'package:daily_habits_tracking/core/util/number_format.dart';
+import 'package:daily_habits_tracking/features/profile/presentation/providers/profile_providers.dart';
+import 'package:daily_habits_tracking/features/settings/presentation/providers/settings_providers.dart';
+import 'package:daily_habits_tracking/features/settings/presentation/widgets/appearance_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/habit_palette.dart';
-import '../data/seed_data.dart';
-import '../providers/settings_provider.dart';
-import '../widgets/app_card.dart';
-import '../widgets/buttons.dart';
-import '../widgets/misc.dart';
-
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  static String _format(int n) {
-    final s = n.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
-    final user = SeedData.user;
+    final user = ref.watch(userProfileProvider);
     final dark = ref.watch(settingsProvider.select((s) => s.dark));
     final stats = [
-      (_format(user.totalDone), 'Hoàn thành'),
+      (formatThousands(user.totalDone), 'Hoàn thành'),
       ('${user.longestStreak}', 'Chuỗi dài nhất'),
       ('${user.joinedDays}', 'Ngày đồng hành'),
     ];
@@ -176,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
                           icon: 'palette',
                           label: 'Tùy chỉnh giao diện',
                           color: c.violet,
-                          onTap: () => _showAppearanceSheet(context, ref),
+                          onTap: () => showAppearanceSheet(context),
                         ),
                         _divider(c),
                         _Row(icon: 'share', label: 'Chia sẻ với bạn bè', color: c.primary),
@@ -255,113 +245,6 @@ class _Row extends StatelessWidget {
             ),
             trailing ??
                 Icon(AppIcons.resolve('chevR'), size: 18, color: c.textFaint),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Appearance tweaks (the TweaksPanel from app.jsx): accent color + corner style.
-void _showAppearanceSheet(BuildContext context, WidgetRef ref) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: context.colors.surface,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (context) => const _AppearanceSheet(),
-  );
-}
-
-class _AppearanceSheet extends ConsumerWidget {
-  const _AppearanceSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final settings = ref.watch(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: c.borderStrong,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tùy chỉnh giao diện',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: c.text,
-              ),
-            ),
-            const SectionLabel('Màu chủ đạo'),
-            Row(
-              children: [
-                for (var i = 0; i < HabitPalette.accents.length; i++)
-                  GestureDetector(
-                    onTap: () => notifier.setAccentIndex(i),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: settings.accentIndex == i
-                              ? c.text
-                              : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: HabitPalette.accents[i],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SectionLabel('Bo góc'),
-            Segmented(
-              value: settings.corner,
-              onChanged: notifier.setCorner,
-              options: const [
-                SegmentOption('rounded', 'Tròn'),
-                SegmentOption('soft', 'Vừa'),
-                SegmentOption('sharp', 'Sắc'),
-              ],
-            ),
-            const SectionLabel('Bố cục thói quen'),
-            Segmented(
-              value: settings.layout,
-              onChanged: notifier.setLayout,
-              options: const [
-                SegmentOption('card', 'Thẻ'),
-                SegmentOption('list', 'Danh sách'),
-                SegmentOption('grid', 'Lưới'),
-              ],
-            ),
           ],
         ),
       ),

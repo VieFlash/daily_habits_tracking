@@ -1,15 +1,15 @@
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/app_card.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/buttons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/flash.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/habit_tile.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
+import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
+import 'package:daily_habits_tracking/core/util/number_format.dart';
+import 'package:daily_habits_tracking/features/challenges/presentation/providers/challenge_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/habit_palette.dart';
-import '../providers/challenges_provider.dart';
-import '../widgets/app_card.dart';
-import '../widgets/buttons.dart';
-import '../widgets/flash.dart';
-import '../widgets/habit_tile.dart';
-import '../widgets/misc.dart';
 
 class ChallengesScreen extends ConsumerStatefulWidget {
   const ChallengesScreen({super.key});
@@ -91,7 +91,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
                                           size: 13, color: c.textDim),
                                       const SizedBox(width: 3),
                                       Text(
-                                        _format(ch.people),
+                                        formatThousands(ch.people),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: c.textDim,
@@ -187,15 +187,5 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
         ],
       ),
     );
-  }
-
-  static String _format(int n) {
-    final s = n.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return buf.toString();
   }
 }

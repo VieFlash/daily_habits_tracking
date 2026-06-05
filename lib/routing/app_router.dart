@@ -1,18 +1,17 @@
+import 'package:daily_habits_tracking/features/challenges/presentation/screens/challenges_screen.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/screens/create_habit_screen.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/screens/habit_detail_screen.dart';
+import 'package:daily_habits_tracking/features/habits/presentation/screens/home_screen.dart';
+import 'package:daily_habits_tracking/features/journal/presentation/screens/journal_screen.dart';
+import 'package:daily_habits_tracking/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:daily_habits_tracking/features/profile/presentation/screens/gamification_screen.dart';
+import 'package:daily_habits_tracking/features/profile/presentation/screens/profile_screen.dart';
+import 'package:daily_habits_tracking/features/settings/presentation/providers/settings_providers.dart';
+import 'package:daily_habits_tracking/features/shell/presentation/screens/shell_screen.dart';
+import 'package:daily_habits_tracking/features/stats/presentation/screens/stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../providers/settings_provider.dart';
-import '../screens/challenges_screen.dart';
-import '../screens/create_habit_screen.dart';
-import '../screens/gamification_screen.dart';
-import '../screens/habit_detail_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/journal_screen.dart';
-import '../screens/onboarding_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/shell_screen.dart';
-import '../screens/stats_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 

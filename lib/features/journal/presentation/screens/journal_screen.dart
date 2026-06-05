@@ -1,22 +1,17 @@
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/app_card.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/buttons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
+import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
+import 'package:daily_habits_tracking/features/journal/domain/entities/mood.dart';
+import 'package:daily_habits_tracking/features/journal/presentation/providers/journal_providers.dart';
+import 'package:daily_habits_tracking/features/journal/presentation/widgets/add_journal_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/habit_palette.dart';
-import '../data/models/mood.dart';
-import '../data/seed_data.dart';
-import '../providers/journal_provider.dart';
-import '../widgets/app_card.dart';
-import '../widgets/buttons.dart';
-import '../widgets/misc.dart';
-import '../widgets/sheets.dart';
-
 class JournalScreen extends ConsumerWidget {
   const JournalScreen({super.key});
-
-  Mood _moodOf(String key) =>
-      SeedData.moods.firstWhere((m) => m.key == key, orElse: () => SeedData.moods.first);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,7 +89,7 @@ class JournalScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    for (final m in SeedData.moods)
+                    for (final m in Mood.all)
                       Expanded(
                         child: Builder(
                           builder: (context) {
@@ -137,7 +132,7 @@ class JournalScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Builder(
                       builder: (context) {
-                        final m = _moodOf(j.mood);
+                        final m = Mood.byKey(j.mood);
                         final hc = HabitPalette.of(m.color, dark);
                         return AppCard(
                           child: Column(

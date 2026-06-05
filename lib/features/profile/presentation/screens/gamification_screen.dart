@@ -1,22 +1,23 @@
+import 'package:daily_habits_tracking/core/icons/app_icons.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/app_card.dart';
+import 'package:daily_habits_tracking/core/presentation/widgets/misc.dart';
+import 'package:daily_habits_tracking/core/theme/app_colors.dart';
+import 'package:daily_habits_tracking/core/theme/habit_palette.dart';
+import 'package:daily_habits_tracking/features/profile/presentation/providers/profile_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/app_icons.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/habit_palette.dart';
-import '../data/seed_data.dart';
-import '../widgets/app_card.dart';
-import '../widgets/misc.dart';
-
-class GamificationScreen extends StatelessWidget {
+class GamificationScreen extends ConsumerWidget {
   const GamificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final dark = c.isDark;
-    final user = SeedData.user;
-    final got = SeedData.badges.where((b) => b.got).length;
+    final user = ref.watch(userProfileProvider);
+    final badges = ref.watch(badgesProvider);
+    final got = badges.where((b) => b.got).length;
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -63,7 +64,7 @@ class GamificationScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$got/${SeedData.badges.length} huy hiệu · ${user.xp} XP',
+                          '$got/${badges.length} huy hiệu · ${user.xp} XP',
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
@@ -97,7 +98,7 @@ class GamificationScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      for (final b in SeedData.badges)
+                      for (final b in badges)
                         Builder(
                           builder: (context) {
                             final hc = HabitPalette.of(b.color, dark);
